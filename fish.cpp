@@ -19,7 +19,7 @@ using namespace std;
 
 class Model
 {
-	public:
+public:
 	vector<vector<vector<vector<uint8_t > > > >  data;
 	//const unsigned long int treshold = 5;
 
@@ -28,17 +28,64 @@ class Model
 
 	}
 
-	void toImage(Image& _target) const
+	void initImage(Image& _target) const
 	{
 
+		size_t z = data[0].size();
+		size_t y = data[0][0].size();
+		size_t x = data[0][0][0].size();
+
+		/*
+		_target.data = (float*) malloc(sizeof(float) * z * y * x);
+		_target.size = x*y*z;
+
+
+		_target.xs = 1;
+		_target.ys = 1;
+		_target.zs = 1;
+
+		_target.nx = x;
+		_target.ny = y;
+		_target.nz = z;
+
+		_target.nc = 1;
+		*/
+
+
+
+		init_im_with_dims(&_target,x,y,z,1);
+
+	}
+
+	void toImage(Image& _target) const
+	{
+		size_t width_y = data[0][0].size();
+		size_t width_x = data[0][0][0].size();
+		int sum = 0;
+
+		for(int z = 0; z < _target.nz; z++)
+		{
+			for(int y = 0; y < _target.ny; y++)
+			{
+				for(int x = 0; x < _target.nx; x++)
+				{
+					//_target.data[z* width_y*width_x  + y * width_x +  x] = this->data[0][z][y][x];
+					sum += this->data[0][z][y][x];
+				}
+			}
+		}
+		cout << sum << endl;
+		exit(0);
 	}
 
 	std::vector<std::vector<double> > MatchToStartingModel(const Model& _starting_model)
 	{
 		Image source;
+		initImage(source);
 		this->toImage(source);
 
 		Image target;
+		initImage(target);
 		_starting_model.toImage(target);
 
 		Affine affine;
@@ -53,8 +100,8 @@ class Model
 
 		if (init_Reg_SIFT3D(&reg))
 		{
-				cleanup_tform(&affine);
-				exit(1);
+			cleanup_tform(&affine);
+			exit(1);
 		}
 
 		// Set the images
@@ -70,8 +117,8 @@ class Model
 		}
 
 		std::cout << "Matrix Type double:" << (affine.A.type == SIFT3D_DOUBLE) << std::endl
-					 << "Matrix Type float:" << (affine.A.type == SIFT3D_FLOAT) << std::endl
-						<< "Matrix Type int:" << (affine.A.type == SIFT3D_INT) << std::endl;
+				  << "Matrix Type float:" << (affine.A.type == SIFT3D_FLOAT) << std::endl
+				  << "Matrix Type int:" << (affine.A.type == SIFT3D_INT) << std::endl;
 
 		for(int a = 0; a < affine.A.num_cols; a++)
 		{
@@ -202,6 +249,7 @@ int main()
 {
 	File file("fish17_post_aligned.hdf5", File::ReadOnly);
 	Model model;
+	Model referenceModel;
 
 	DataSet dataset =file.getDataSet("TZYX");
 
@@ -224,14 +272,21 @@ int main()
 	if(dimensions.size() == 4)
 	{
 		model = Model(dimensions);
+		referenceModel = Model(dimensions);
+
+		model.setModelToTimeStep(dataset.select({0,0,0,0}, {1,size_z,size_y,size_x}));
 
 
-		for(long unsigned int timestep = 0; timestep < timesteps-timesteps+1; timestep++)
+
+		for(long unsigned int timestep = 1; timestep < timesteps-timesteps+2; timestep++)
 		{
 			model.setModelToTimeStep(dataset.select({timestep,0,0,0}, {1,size_z,size_y,size_x}));
 			model.exportToXYZ("fish.xyz");
 			cout << "Timestep: " << timestep << endl;
 		}
+
+		model.MatchToStartingModel(referenceModel);
+
 		//dataset.select()
 	}
 
