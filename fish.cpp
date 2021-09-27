@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sift3d/sift.h>
 #include <sift3d/reg.h>
+#include <sift3d/imtypes.h>
+#include <sift3d/imutil.h>
 
 #include "highfive/H5File.hpp"
 #include "highfive/H5DataSet.hpp"
@@ -26,7 +28,7 @@ class Model
 
 	}
 
-	void toImage(Image& _target)
+	void toImage(Image& _target) const
 	{
 
 	}
@@ -56,7 +58,7 @@ class Model
 		}
 
 		// Set the images
-		if (set_src_Reg_SIFT3D(&reg, &src) || set_ref_Reg_SIFT3D(&reg, &ref))
+		if (set_src_Reg_SIFT3D(&reg, &source) || set_ref_Reg_SIFT3D(&reg, &target))
 		{
 			exit(1);
 		}
@@ -67,17 +69,17 @@ class Model
 			exit(1);
 		}
 
-		std::cout << "Matrix Type double:" << affine.A.type == SIFT3D_DOUBLE << std::endl
-					 << "Matrix Type float:" << affine.A.type == SIFT3D_FLOAT << std::endl
-						<< "Matrix Type int:" << affine.A.type == SIFT3D_INT << std::endl;
+		std::cout << "Matrix Type double:" << (affine.A.type == SIFT3D_DOUBLE) << std::endl
+					 << "Matrix Type float:" << (affine.A.type == SIFT3D_FLOAT) << std::endl
+						<< "Matrix Type int:" << (affine.A.type == SIFT3D_INT) << std::endl;
 
 		for(int a = 0; a < affine.A.num_cols; a++)
 		{
-			resultMatrix.push_back(std::vector<double>);
+			resultMatrix.push_back(std::vector<double>());
 
 			for(int b = 0; b < affine.A.num_rows; b++)
 			{
-				resultMatrix[a].push_back(affine.A.u[a*affine.A.num_rows+b]);
+				resultMatrix[a].push_back(affine.A.u.data_double[a*affine.A.num_rows+b]);
 			}
 		}
 
