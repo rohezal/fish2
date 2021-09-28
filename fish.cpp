@@ -59,16 +59,16 @@ public:
 	void createTestCaseBase()
 	{
 		makeAllVoxelsBlack();
-		drawQuad(10,10,10,50,40,5);
-		drawQuad(100,100,10,80,20,8);
+		drawQuad(10,11,10,50,40,5);
+		drawQuad(100,101,10,80,20,8);
 
 	}
 
 	void createTestCaseMoved()
 	{
 		makeAllVoxelsBlack();
-		drawQuad(40,10,10,50,40,5);
-		drawQuad(130,100,10,80,20,8);
+		drawQuad(10,10,10,50,40,5);
+		drawQuad(100,100,10,80,20,8);
 	}
 
 
@@ -119,6 +119,29 @@ public:
 		}
 	}
 
+	void imageToXYZ(const Image& _image, const string& _filename)
+	{
+		std::ofstream outputFile(_filename);
+		size_t width_y = data[0][0].size();
+		size_t width_x = data[0][0][0].size();
+
+		for(size_t z = 0; z < data[0].size(); z++) //going through z
+		{
+			for(size_t y = 0; y < data[0][z].size(); y++) //going through y
+			{
+				for(size_t x = 0; x < data[0][z][y].size(); x++) //going through x
+				{
+					if(fabs(_image.data[z* width_y*width_x  + y * width_x +  x]) > 0.0001)
+					{
+						outputFile << x << " " << y << " " << z << " " << _image.data[z* width_y*width_x  + y * width_x +  x] << " " << _image.data[z* width_y*width_x  + y * width_x +  x] << " " << _image.data[z* width_y*width_x  + y * width_x +  x] << std::endl;
+					}
+				}
+			}
+		}
+
+		outputFile.close();
+	}
+
 	std::vector<std::vector<double> > MatchToStartingModel(const Model& _starting_model)
 	{
 		Image source;
@@ -131,6 +154,9 @@ public:
 		_starting_model.initImage(target);
 		_starting_model.toImage(target);
 		std::cout << "Image target done" << endl;
+
+		imageToXYZ(source, "source_image.xyz");
+		imageToXYZ(target, "target_image.xyz");
 
 		Affine affine;
 		Reg_SIFT3D reg;
@@ -166,13 +192,13 @@ public:
 				  << "Matrix Type int:" << (affine.A.type == SIFT3D_INT) << std::endl;
 		*/
 
-		for(int a = 0; a < affine.A.num_cols; a++)
+		for(int a = 0; a < affine.A.num_rows; a++)
 		{
 			resultMatrix.push_back(std::vector<double>());
 
-			for(int b = 0; b < affine.A.num_rows; b++)
+			for(int b = 0; b < affine.A.num_cols; b++)
 			{
-				resultMatrix[a].push_back(affine.A.u.data_double[a*affine.A.num_rows+b]);
+				resultMatrix[a].push_back(affine.A.u.data_double[a*affine.A.num_cols+b]);
 			}
 		}
 
