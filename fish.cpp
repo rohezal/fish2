@@ -28,6 +28,50 @@ public:
 
 	}
 
+	void drawQuad(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez)
+	{
+		for(size_t a = offsetz; a < offsetz+sizez; a++) //z dimension
+		{
+			for(size_t b = offsety; b < offsety+sizey; b++) //y dimension
+			{
+				for(size_t c = offsetx; c < offsetx+sizex; c++) //x dimension
+				{
+					data[0][a][b][c] = 255;
+				}
+			}
+		}
+	}
+
+	void makeAllVoxelsBlack()
+	{
+		for(size_t a = 0; a < data[0].size(); a++) //z dimension
+		{
+			for(size_t b = 0; b < data[0][0].size(); b++) //y dimension
+			{
+				for(size_t c = 0; c < data[0][0][0].size(); c++) //x dimension
+				{
+					data[0][a][b][c] = 0;
+				}
+			}
+		}
+	}
+
+	void createTestCaseBase()
+	{
+		makeAllVoxelsBlack();
+		drawQuad(10,10,10,50,40,5);
+		drawQuad(100,100,10,80,20,8);
+
+	}
+
+	void createTestCaseMoved()
+	{
+		makeAllVoxelsBlack();
+		drawQuad(40,10,10,50,40,5);
+		drawQuad(130,100,10,80,20,8);
+	}
+
+
 	void initImage(Image& _target) const
 	{
 
@@ -61,7 +105,6 @@ public:
 	{
 		size_t width_y = data[0][0].size();
 		size_t width_x = data[0][0][0].size();
-		int sum = 0;
 
 		for(int z = 0; z < _target.nz; z++)
 		{
@@ -69,24 +112,25 @@ public:
 			{
 				for(int x = 0; x < _target.nx; x++)
 				{
-					//_target.data[z* width_y*width_x  + y * width_x +  x] = this->data[0][z][y][x];
-					sum += this->data[0][z][y][x];
+					_target.data[z* width_y*width_x  + y * width_x +  x] = this->data[0][z][y][x];
+					//sum += this->data[0][z][y][x];
 				}
 			}
 		}
-		cout << sum << endl;
-		exit(0);
 	}
 
 	std::vector<std::vector<double> > MatchToStartingModel(const Model& _starting_model)
 	{
 		Image source;
-		initImage(source);
+		this->initImage(source);
 		this->toImage(source);
 
+		std::cout << "Image source done" << endl;
+
 		Image target;
-		initImage(target);
+		_starting_model.initImage(target);
 		_starting_model.toImage(target);
+		std::cout << "Image target done" << endl;
 
 		Affine affine;
 		Reg_SIFT3D reg;
@@ -116,9 +160,11 @@ public:
 			exit(1);
 		}
 
+		/*
 		std::cout << "Matrix Type double:" << (affine.A.type == SIFT3D_DOUBLE) << std::endl
 				  << "Matrix Type float:" << (affine.A.type == SIFT3D_FLOAT) << std::endl
 				  << "Matrix Type int:" << (affine.A.type == SIFT3D_INT) << std::endl;
+		*/
 
 		for(int a = 0; a < affine.A.num_cols; a++)
 		{
@@ -140,10 +186,10 @@ public:
 		data.resize(1); //t axis always 1, because our model is always the voxel data from one timestep
 		data[0].resize(dimensions[1]); //z axis 21
 
-		for (size_t i = 0; i < data.size(); i++)
+		for (size_t i = 0; i < data[0].size(); i++)
 		{
 			data[0][i].resize(dimensions[2]); //y axis 512
-			for (size_t x = 0; x < data[i].size(); x++)
+			for (size_t x = 0; x < data[0][i].size(); x++)
 			{
 				data[0][i][x].resize(dimensions[3]); //x axis 512
 			}
@@ -156,7 +202,7 @@ public:
 
 
 		//data[0] is just the beginning of Z. We need it since it contains almost one timestep and it matches the hdf5 file format
-		for(size_t a = 0; a < data[0].size(); a++) //going through z
+		/*for(size_t a = 0; a < data[0].size(); a++) //going through z
 		{
 			for(size_t b = 0; b < data[0][a].size(); b++) //going through y
 			{
@@ -169,7 +215,19 @@ public:
 					}
 				}
 			}
+		}*/
+
+		for(size_t a = 0; a < data[0].size(); a++) //going through z
+		{
+			for(size_t b = 0; b < data[0][a].size(); b++) //going through y
+			{
+				for(size_t c = 0; c < data[0][a][b].size(); c++) //going through x
+				{
+					outputFile << c << " " << b << " " << a * 10 << " " << (int) data[0][a][b][c] << " " << (int) data[0][a][b][c] << " " << (int) data[0][a][b][c] << std::endl;
+				}
+			}
 		}
+
 		outputFile.close();
 	}
 
@@ -245,6 +303,27 @@ public:
 	}
 };
 
+void printMatrix(std::vector<std::vector<double> > _matrix)
+{
+	for(int a = 0; a < _matrix.size(); a++)
+	{
+		for(int b = 0; b < _matrix[0].size(); b++)
+		{
+			if( fabs(_matrix[a][b]) > 0.000001)
+			{
+				cout << _matrix[a][b] << " ";
+			}
+			else
+			{
+				cout << 0 << " ";
+			}
+
+
+		}
+		cout << endl;
+	}
+}
+
 int main()
 {
 	File file("fish17_post_aligned.hdf5", File::ReadOnly);
@@ -268,24 +347,38 @@ int main()
 	const long unsigned int size_y = dimensions[2];
 	const long unsigned int size_x = dimensions[3];
 
+	vector<long unsigned int> sample_dimensions;
+	sample_dimensions.push_back(1);
+	sample_dimensions.push_back(21);
+	sample_dimensions.push_back(256);
+	sample_dimensions.push_back(256);
 
 	if(dimensions.size() == 4)
 	{
-		model = Model(dimensions);
-		referenceModel = Model(dimensions);
+		//model = Model(dimensions);
+		//referenceModel = Model(dimensions);
 
-		model.setModelToTimeStep(dataset.select({0,0,0,0}, {1,size_z,size_y,size_x}));
+		model = Model(sample_dimensions);
+		referenceModel = Model(sample_dimensions);
 
+
+		//referenceModel.setModelToTimeStep(dataset.select({0,0,0,0}, {1,size_z,size_y,size_x}));
+		referenceModel.createTestCaseBase();
+		referenceModel.exportToXYZ("base.xyz");
 
 
 		for(long unsigned int timestep = 1; timestep < timesteps-timesteps+2; timestep++)
 		{
-			model.setModelToTimeStep(dataset.select({timestep,0,0,0}, {1,size_z,size_y,size_x}));
-			model.exportToXYZ("fish.xyz");
+			//model.setModelToTimeStep(dataset.select({timestep,0,0,0}, {1,size_z,size_y,size_x}));
+			model.createTestCaseMoved();
+			model.exportToXYZ("moved.xyz");
+			//model.exportToXYZ("fish.xyz");
 			cout << "Timestep: " << timestep << endl;
 		}
 
-		model.MatchToStartingModel(referenceModel);
+		std::vector<std::vector<double> > matrix = model.MatchToStartingModel(referenceModel);
+		printMatrix(matrix);
+
 
 		//dataset.select()
 	}
