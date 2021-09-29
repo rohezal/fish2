@@ -251,7 +251,10 @@ public:
 			{
 				for(size_t c = 0; c < data[0][a][b].size(); c++) //going through x
 				{
-					outputFile << c << " " << b << " " << a * 10 << " " << (int) data[0][a][b][c] << " " << (int) data[0][a][b][c] << " " << (int) data[0][a][b][c] << std::endl;
+					if(data[0][a][b][c] > 0.0001)
+					{
+						outputFile << c << " " << b << " " << a * 10 << " " << (int) data[0][a][b][c] << " " << (int) data[0][a][b][c] << " " << (int) data[0][a][b][c] << std::endl;
+					}
 				}
 			}
 		}
@@ -378,10 +381,9 @@ int main()
 	vector<long unsigned int> sample_dimensions;
 	sample_dimensions.push_back(1);
 	sample_dimensions.push_back(21);
-	sample_dimensions.push_back(256);
-	sample_dimensions.push_back(256);
+	sample_dimensions.push_back(512);
+	sample_dimensions.push_back(512);
 
-	std::time_t start = std::time(nullptr);
 
 	if(dimensions.size() == 4)
 	{
@@ -396,7 +398,6 @@ int main()
 		referenceModel.createTestCaseBase();
 		referenceModel.exportToXYZ("base.xyz");
 
-
 		for(long unsigned int timestep = 1; timestep < timesteps-timesteps+2; timestep++)
 		{
 			//model.setModelToTimeStep(dataset.select({timestep,0,0,0}, {1,size_z,size_y,size_x}));
@@ -406,16 +407,19 @@ int main()
 			cout << "Timestep: " << timestep << endl;
 		}
 
+		std::time_t start = std::time(nullptr);
 		std::vector<std::vector<double> > matrix = model.MatchToStartingModel(referenceModel);
+		std::time_t end = std::time(nullptr);
+		cout << "Runtime:  " << end-start << " / Start: " << start << " / End: " << end << endl;
+
+
 		printMatrix(matrix);
 
 
 		//dataset.select()
 	}
 
-	std::time_t end = std::time(nullptr);
 
-	cout << "Runtime:  " << end-start << " / Start: " << start << " / End: " << end << endl;
 
 
 	return 0;
