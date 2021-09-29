@@ -6,6 +6,7 @@
 #include <sift3d/reg.h>
 #include <sift3d/imtypes.h>
 #include <sift3d/imutil.h>
+#include <sift3d/immacros.h>
 
 #include "highfive/H5File.hpp"
 #include "highfive/H5DataSet.hpp"
@@ -59,16 +60,16 @@ public:
 	void createTestCaseBase()
 	{
 		makeAllVoxelsBlack();
-		drawQuad(10,11,10,50,40,5);
-		drawQuad(100,101,10,80,20,8);
+		drawQuad(10,40,10,50,40,5);
+		drawQuad(100,130,10,80,20,8);
 
 	}
 
 	void createTestCaseMoved()
 	{
 		makeAllVoxelsBlack();
-		drawQuad(10,10,10,50,40,5);
-		drawQuad(100,100,10,80,20,8);
+		drawQuad(30,10,10,50,40,5);
+		drawQuad(120,100,10,80,20,8);
 	}
 
 
@@ -105,6 +106,7 @@ public:
 	{
 		size_t width_y = data[0][0].size();
 		size_t width_x = data[0][0][0].size();
+		Image* p_target =  &_target;
 
 		for(int z = 0; z < _target.nz; z++)
 		{
@@ -112,8 +114,8 @@ public:
 			{
 				for(int x = 0; x < _target.nx; x++)
 				{
-					_target.data[z* width_y*width_x  + y * width_x +  x] = this->data[0][z][y][x];
-					//sum += this->data[0][z][y][x];
+					//_target.data[z* width_y*width_x  + y * width_x +  x] = this->data[0][z][y][x];
+					_target.data[SIFT3D_IM_GET_IDX(p_target, x, y, z, 1)] = this->data[0][z][y][x]; //1 = channel
 				}
 			}
 		}
@@ -379,6 +381,8 @@ int main()
 	sample_dimensions.push_back(256);
 	sample_dimensions.push_back(256);
 
+	std::time_t start = std::time(nullptr);
+
 	if(dimensions.size() == 4)
 	{
 		//model = Model(dimensions);
@@ -409,6 +413,9 @@ int main()
 		//dataset.select()
 	}
 
+	std::time_t end = std::time(nullptr);
+
+	cout << "Runtime:  " << end-start << " / Start: " << start << " / End: " << end << endl;
 
 
 	return 0;
